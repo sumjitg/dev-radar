@@ -35,7 +35,11 @@ schedule enabled.
 
 1. **Actions** tab → *Dev Radar* → **Run workflow** to fill the page once.
 2. **Settings → Pages → Build and deployment → Source: GitHub Actions** - the
-   page then lives at `https://<your-user>.github.io/<repo>/`.
+   page then lives at `https://<your-user>.github.io/<repo>/`. GitHub only
+   offers Pages for private repositories on a paid plan; on a free plan either
+   make this repository public or skip Pages - the digest is still generated on
+   every run and attached to the run as the `github-pages` artifact, and the
+   notification path works either way.
 3. Optional secrets (**Settings → Secrets and variables → Actions**):
    - `NTFY_TOPIC` - push notifications. Install the [ntfy](https://ntfy.sh) app,
      subscribe to a private topic name of your choosing, and put that same name
