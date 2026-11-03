@@ -1,6 +1,8 @@
 name: Dev Radar
 
 on:
+  push:
+    branches: [main]
   schedule:
     # Every two hours, on the even hour (GitHub may start it a few minutes late).
     - cron: "0 */2 * * *"

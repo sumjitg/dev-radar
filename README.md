@@ -25,10 +25,11 @@ is logged and skipped, and the run still publishes what it has.
 ## The schedule
 
 `.github/workflows/radar.yml` runs on `cron: "0 */2 * * *"` - every two hours on
-the even UTC hour - and can also be started by hand from **Actions → Dev Radar →
-Run workflow**. GitHub can start a scheduled run a few minutes late, and skips
-it entirely if the repository has had no activity for 60 days, so the workflow
-commits a `.keepalive` file once a day to keep the schedule enabled.
+the even UTC hour - on every push to `main`, and when started by hand from
+**Actions → Dev Radar → Run workflow**. GitHub can start a scheduled run a few
+minutes late, and skips it entirely if the repository has had no activity for 60
+days, so the workflow commits a `.keepalive` file once a day to keep the
+schedule enabled.
 
 ## One-time setup on GitHub
 
