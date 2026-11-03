@@ -1,0 +1,83 @@
+name: Dev Radar
+
+on:
+  schedule:
+    # Every two hours, on the even hour (GitHub may start it a few minutes late).
+    - cron: "0 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check out uv for the agent-reach install
+        uses: astral-sh/setup-uv@v5
+        continue-on-error: true
+        with:
+          enable-cache: false
+
+      - name: Install agent-reach (optional)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          uv tool install --force https://github.com/Panniantong/Agent-Reach/releases/latest/download/agent-reach.zip
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          timeout 300 agent-reach setup || true
+          timeout 120 agent-reach doctor --text || true
+
+      - name: Collect, rank and publish
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          python radar.py
+
+      - name: Keep the two-hourly schedule alive
+        continue-on-error: true
+        run: |
+          echo "$(date -u +%F)" > .keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .keepalive
+          git diff --staged --quiet && exit 0
+          git commit -m "chore: keepalive $(date -u +%F)"
+          git push
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: radar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

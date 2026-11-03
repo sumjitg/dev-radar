@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="{{TAGLINE}}">
+<title>{{TITLE}}</title>
+<style>
+  :root {
+    --bg: #0a0d13;
+    --panel: #11161f;
+    --panel-2: #161d29;
+    --line: #1e2634;
+    --text: #e7ebf3;
+    --muted: #8b95a9;
+    --accent: #5eead4;
+    --new: #f472b6;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 22px 16px 56px;
+  }
+  .top h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+  }
+  .tagline {
+    margin: 4px 0 12px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.15);
+  }
+  .status b { color: var(--text); font-weight: 600; }
+  .brief {
+    margin: 14px 0 4px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  }
+  .brief-title {
+    margin: 0 0 8px;
+    font-size: 0.74rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .brief-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.94rem;
+  }
+  .brief-list li { margin: 5px 0; }
+  .filters { margin: 18px 0 8px; }
+  #q {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 0.94rem;
+    outline: none;
+  }
+  #q:focus { border-color: #2f3d54; }
+  .chips {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding: 10px 0 2px;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    padding: 6px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip.is-active {
+    border-color: #2c5f57;
+    background: rgba(94, 234, 212, 0.12);
+    color: var(--accent);
+  }
+  .count-line {
+    margin: 6px 0 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .card {
+    margin: 12px 0;
+    padding: 14px 15px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line);
+    border-radius: 13px;
+    background: var(--panel);
+  }
+  .card.is-new { border-left-color: var(--new); }
+  .card[hidden] { display: none; }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+  .src { color: #a7b4cc; font-weight: 600; }
+  .badge {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(244, 114, 182, 0.16);
+    color: var(--new);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .card h3 {
+    margin: 8px 0 6px;
+    font-size: 1.03rem;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .card h3 a { color: var(--text); text-decoration: none; }
+  .card h3 a:hover { color: var(--accent); }
+  .sum { margin: 0; font-size: 0.9rem; color: #bcc6d8; }
+  .more { margin-top: 8px; }
+  .more summary {
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: var(--accent);
+    list-style: none;
+  }
+  .more summary::-webkit-details-marker { display: none; }
+  .more p { margin: 8px 0 0; font-size: 0.86rem; color: #a8b3c6; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag { font-size: 0.72rem; color: #6d7a92; }
+  .empty { color: var(--muted); font-size: 0.9rem; padding: 24px 4px; }
+  footer {
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>{{TITLE}}</h1>
+    <p class="tagline">{{TAGLINE}}</p>
+    <div class="status">
+      <span><span class="dot"></span>live</span>
+      <span>updated <b>{{UPDATED}}</b></span>
+      <span>{{UPDATED_LOCAL}}</span>
+      <span><b>{{COUNT}}</b> items · <b>{{NEW_COUNT}}</b> new</span>
+      <span>window {{WINDOW}}</span>
+    </div>
+  </header>
+
+  <section class="brief">
+    {{BRIEF}}
+  </section>
+
+  <section class="filters">
+    <input id="q" type="search" placeholder="Search titles, sources, tags" autocomplete="off" spellcheck="false">
+    <div class="chips" id="chips">{{CHIPS}}</div>
+    <p class="count-line"><span id="shown">{{COUNT}}</span> shown</p>
+  </section>
+
+  <main id="list">
+%%CARDS%%
+  </main>
+
+  <footer>
+    <p>Collected by <a href="https://github.com/Panniantong/Agent-Reach">agent-reach</a> and RSS every two hours. The page reloads itself when you leave it open.</p>
+    <p>Last update {{UPDATED_ISO}}.</p>
+  </footer>
+</div>
+<script>
+  var cards = Array.prototype.slice.call(document.querySelectorAll('article.card'));
+  var input = document.getElementById('q');
+  var shown = document.getElementById('shown');
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-tag]'));
+  var newOnlyButton = document.getElementById('new-only');
+  var activeTag = '';
+  var onlyNew = false;
+
+  function apply() {
+    var needle = input.value.trim().toLowerCase();
+    var count = 0;
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      var tags = (card.getAttribute('data-tags') || '').split(',');
+      var tagOk = !activeTag || tags.indexOf(activeTag) !== -1;
+      var textOk = !needle || (card.getAttribute('data-q') || '').indexOf(needle) !== -1;
+      var newOk = !onlyNew || card.getAttribute('data-new') === '1';
+      var visible = tagOk && textOk && newOk;
+      card.hidden = !visible;
+      if (visible) { count++; }
+    }
+    shown.textContent = count;
+  }
+
+  input.addEventListener('input', apply);
+
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (other) { other.classList.remove('is-active'); });
+      chip.classList.add('is-active');
+      activeTag = chip.getAttribute('data-tag') || '';
+      apply();
+    });
+  });
+
+  if (newOnlyButton) {
+    newOnlyButton.addEventListener('click', function () {
+      onlyNew = !onlyNew;
+      newOnlyButton.classList.toggle('is-active', onlyNew);
+      apply();
+    });
+  }
+
+  window.setInterval(function () {
+    if (!document.hidden) { window.location.reload(); }
+  }, 15 * 60 * 1000);
+</script>
+</body>
+</html>
