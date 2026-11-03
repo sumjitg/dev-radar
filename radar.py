@@ -502,12 +502,18 @@ def enrich(items: list[dict], cfg: dict) -> None:
         return
 
     timeout = int(reach.get("timeout_seconds") or 80)
+    read_backend = str(reach.get("read_backend") or "").strip()
     targets = [item for item in items if len(item.get("summary") or "") < 160][:limit]
     if not targets:
         return
     log(f"agent-reach read: enriching {len(targets)} item(s)")
     for item in targets:
-        payload = run_agent_reach(["read", item["url"]], timeout)
+        args = ["read", item["url"]]
+        if read_backend:
+            # Read through the plain public-web path: platform backends (the github
+            # API, for one) rate-limit a CI runner after a handful of calls.
+            args += ["--backend", read_backend]
+        payload = run_agent_reach(args, timeout)
         if not payload:
             continue
         body = flat(_longest_text(payload), 2400)

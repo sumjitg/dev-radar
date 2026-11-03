@@ -53,6 +53,7 @@
     "enabled": true,
     "read_top_n": 8,
     "timeout_seconds": 60,
+    "read_backend": "public-web",
     "searches": [
       {
         "channel": "web",

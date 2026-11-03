@@ -58,8 +58,10 @@ Everything lives in `config.json`:
 - `agent_reach.searches` - `channel` + `action` + `query` + `limit`, plus
   `categories`. Defaults are two `web` searches; drop them, add more, or use
   another channel that needs no login (`github`, `youtube`, `v2ex`).
-  `agent_reach.read_top_n` caps how many pages are opened per run, and
-  `timeout_seconds` caps each call.
+  `agent_reach.read_top_n` caps how many pages are opened per run,
+  `timeout_seconds` caps each call, and `read_backend` (`public-web` by default)
+  keeps page reads on the plain web path instead of a platform API, which
+  rate-limits CI runners.
 - `ranking.boost_keywords` / `demote_keywords` - what floats up, what sinks.
 - `lookback_hours`, `max_items`, `schedule_hours` (keep it equal to the cron
   interval so "new" lines up with the previous run), `timezone` for the clock
