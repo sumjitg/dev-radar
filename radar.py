@@ -748,7 +748,12 @@ def brief_markup(brief: str, items: list[dict]) -> str:
     if not bullets:
         return ""
     entries = "".join(f"<li>{html_lib.escape(bullet)}</li>" for bullet in bullets)
-    return f'<p class="eyebrow">{label}</p><ul class="brief-list">{entries}</ul>'
+    return (
+        '<section class="brief">'
+        f'<p class="eyebrow">{label}</p>'
+        f'<ul class="brief-list">{entries}</ul>'
+        "</section>"
+    )
 
 
 def chips_markup(items: list[dict], cfg: dict) -> str:

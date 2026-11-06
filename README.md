@@ -1,6 +1,8 @@
 # Dev Radar
 
-A two-hourly sweep for what just shipped: RSS feeds plus the
+A two-hourly sweep of everything moving in AI - startups and money, papers and
+research, frontier labs and AGI, India's AI build-out, and what people are
+arguing about on Reddit and Hacker News. RSS feeds plus the
 [agent-reach](https://github.com/Panniantong/Agent-Reach) skill for searches and
 full-page reads, ranked by recency and keywords, published as a page and pushed
 to your phone.
