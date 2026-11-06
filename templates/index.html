@@ -21,6 +21,7 @@
   }
   @media (prefers-color-scheme: light) {
     :root {
+      --bg: #f7f8fa;
       --surface: #ffffff;
       --surface-2: #f1f3f7;
       --line: #e3e7ee;
@@ -204,7 +205,7 @@
     background: var(--surface);
     transition: border-color 0.15s ease;
   }
-  .card:hover { border-color: var(--muted); }
+  .card:hover { border-color: var(--faint); }
   .card.is-new { border-left: 2px solid var(--accent); }
   .card[hidden] { display: none; }
   .card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 0.72rem; color: var(--faint); }
