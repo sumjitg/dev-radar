@@ -72,12 +72,12 @@
     { "name": "Google News: India AI", "url": "https://news.google.com/rss/search?q=India%20(AI%20OR%20%22artificial%20intelligence%22)&hl=en-IN&gl=IN&ceid=IN:en", "categories": ["india"] },
     { "name": "Google News: India AI policy", "url": "https://news.google.com/rss/search?q=India%20AI%20(policy%20OR%20regulation%20OR%20semiconductor%20OR%20%22data%20centre%22)%20when:3d&hl=en-IN&gl=IN&ceid=IN:en", "categories": ["india"] },
 
-    { "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml", "categories": ["industry"] },
-    { "name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index", "categories": ["industry"] },
-    { "name": "MIT Tech Review", "url": "https://www.technologyreview.com/feed/", "categories": ["industry"] },
+    { "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml", "categories": ["industry"], "require_ai": true },
+    { "name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index", "categories": ["industry"], "require_ai": true },
+    { "name": "MIT Tech Review", "url": "https://www.technologyreview.com/feed/", "categories": ["industry"], "require_ai": true },
 
-    { "name": "Hacker News", "url": "https://hnrss.org/newest?points=50", "categories": ["discussion"] },
-    { "name": "Reddit", "url": "https://www.reddit.com/r/artificial+MachineLearning+LocalLLaMA+singularity+developersIndia/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" }
+    { "name": "Hacker News", "url": "https://hnrss.org/newest?points=50", "categories": ["discussion"], "require_ai": true },
+    { "name": "Reddit", "url": "https://www.reddit.com/r/artificial+MachineLearning+LocalLLaMA+singularity+developersIndia/new/.rss", "categories": ["discussion"], "require_ai": true, "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" }
   ],
   "agent_reach": {
     "enabled": true,

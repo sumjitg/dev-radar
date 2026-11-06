@@ -57,6 +57,18 @@ TRACKING_PARAMS = {
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
 _NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
+# Feeds that carry general news need this to earn a place on an AI radar.
+_AI_RE = re.compile(
+    r"\b("
+    r"ai|a\.i\.|artificial intelligence|llms?|gpt[\w.\-]*|chatgpt|claude|gemini|"
+    r"openai|anthropic|deepmind|hugging face|transformers?|neural|machine learning|"
+    r"deep learning|agi|superintelligence|models?|agents?|inference|training|"
+    r"datasets?|benchmarks?|robotics?|autonomous|copilot|mistral|llama|qwen|deepseek|"
+    r"diffusion|embeddings?|fine-?tuning|prompts?|multimodal|reasoning|alignment|"
+    r"hallucinat\w*|data cent(er|re)s?|gpus?|nvidia|semiconductors?"
+    r")\b"
+)
+_REDDIT_BLOCK = "you've been blocked by network security"
 
 
 # --------------------------------------------------------------------------- #
@@ -281,6 +293,11 @@ def _item_url(elem) -> str:
     return fallback if fallback.startswith("http") else ""
 
 
+def ai_relevant(item: dict) -> bool:
+    text = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+    return bool(_AI_RE.search(text))
+
+
 def parse_feed(raw: bytes, source: str, categories: list[str]) -> list[dict]:
     try:
         root = ET.fromstring(raw)
@@ -298,6 +315,15 @@ def parse_feed(raw: bytes, source: str, categories: list[str]) -> list[dict]:
         url = _item_url(elem).strip()
         if not url:
             continue
+        summary = flat(
+            _child_text(elem, "description", "summary", "content", "encoded"),
+            400,
+        )
+        if _REDDIT_BLOCK in summary.lower():
+            continue
+        publisher = flat(_child_text(elem, "source"), 80)
+        if publisher and title.endswith(f" - {publisher}"):
+            title = title[: -(len(publisher) + 3)].strip()
         items.append(
             {
                 "title": title,
@@ -317,10 +343,7 @@ def parse_feed(raw: bytes, source: str, categories: list[str]) -> list[dict]:
                         )
                     )
                 ),
-                "summary": flat(
-                    _child_text(elem, "description", "summary", "content", "encoded"),
-                    400,
-                ),
+                "summary": summary,
                 "tags": unique([tag.lower() for tag in categories]),
                 "via": "rss",
             }
@@ -343,6 +366,8 @@ def collect_feeds(cfg: dict) -> list[dict]:
                 user_agent=feed.get("user_agent") or None,
             )
             items = parse_feed(raw, name, feed.get("categories") or [])
+            if feed.get("require_ai"):
+                items = [item for item in items if ai_relevant(item)]
         except Exception as exc:  # one broken feed must never sink the run
             log(f"feed failed ({name}): {exc}")
             return []
@@ -587,9 +612,10 @@ def prepare(raw_items: list[dict], cfg: dict, moment: dt.datetime) -> list[dict]
     max_items = int(cfg.get("max_items") or 60)
     cutoff = moment - dt.timedelta(hours=window_hours)
     schedule_hours = int(cfg.get("schedule_hours") or 2)
-    # The previous scheduled slot, not the current one: a run that GitHub starts
-    # a few minutes late must still cover the two hours before it.
-    fresh_from = slot_start(moment, schedule_hours) - dt.timedelta(hours=schedule_hours)
+    # One slot, shown once: the two hours before the current even hour. A run
+    # GitHub starts late still covers the slot before it, and nothing repeats.
+    slot = slot_start(moment, schedule_hours)
+    fresh_from = slot - dt.timedelta(hours=schedule_hours)
 
     kept: list[dict] = []
     seen_urls: set[str] = set()
@@ -617,7 +643,7 @@ def prepare(raw_items: list[dict], cfg: dict, moment: dt.datetime) -> list[dict]
         item["detail"] = item.get("detail") or ""
         item["tags"] = unique([str(tag).lower() for tag in item.get("tags") or []])
         item["score"] = score_item(item, cfg, moment)
-        item["is_new"] = bool(published and published >= fresh_from)
+        item["is_new"] = bool(published and fresh_from <= published < slot)
         item["age"] = human_age(published, moment)
 
         seen_urls.add(url_key)

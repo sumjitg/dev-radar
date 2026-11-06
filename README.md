@@ -16,8 +16,9 @@ to your phone.
    not just an RSS snippet.
 3. **Prepare** - de-duplicate by normalised URL and by title, drop anything
    older than `lookback_hours`, score by recency + keyword boosts, cap each
-   topic so no single source floods the page, and mark what arrived since the
-   last two-hour window as `new`.
+   topic so no single source floods the page, and mark the items published in
+   the two hours before the current even hour as `new` - each slot is shown
+   once, so nothing repeats from run to run.
 4. **Publish** - `public/index.html` grouped by topic, newest first, showing
    **only new items** with everything from the rest of the day behind an
    "Earlier" toggle; plus `public/data.json` and `public/digest.md`.
@@ -71,8 +72,10 @@ Everything lives in `config.json`:
   India AI section and `["discussion"]` in what people are saying. Order here is
   the order of the sections on the page.
 - `feeds` - `name`, `url`, `categories`, and optionally `user_agent` (Reddit
-  wants a descriptive one). Any RSS or Atom feed works, including Google News
-  query feeds such as
+  wants a descriptive one) and `require_ai` (`true` drops posts that never
+  mention AI - used on the general-news feeds so a Hacker News front page full
+  of rocket launches does not fill the radar). Any RSS or Atom feed works,
+  including Google News query feeds such as
   `https://news.google.com/rss/search?q=India%20AI%20policy&hl=en-IN&gl=IN&ceid=IN:en`
   - that is how the India and superintelligence sections stay broad.
 - `agent_reach.searches` - `channel` + `action` + `query` + `limit` + `categories`,
