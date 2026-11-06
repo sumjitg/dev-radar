@@ -78,10 +78,10 @@ Everything lives in `config.json`:
 - `agent_reach.searches` - `channel` + `action` + `query` + `limit` + `categories`,
   and `enabled: false` to park one. Defaults are four `web` searches (debates,
   startup funding, India, superintelligence) plus a disabled `twitter` search.
-  `agent_reach.read_top_n` caps how many pages are opened per run,
-  `timeout_seconds` caps each call, and `read_backend` (`public-web` by default)
-  keeps page reads on the plain web path instead of a platform API, which
-  rate-limits CI runners.
+  `agent_reach.read_top_n` caps how many pages are opened per run and
+  `timeout_seconds` caps each call. The workflow hands the run a
+  `GITHUB_TOKEN`, so GitHub page reads do not hit the 60-per-hour anonymous
+  limit.
 - `ranking.boost_keywords` / `demote_keywords` - what floats up, what sinks.
 - `only_new` (`true`) - the page shows only items since the previous sweep; set
   it to `false` to list the whole `lookback_hours` window.

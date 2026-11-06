@@ -77,17 +77,12 @@
     { "name": "MIT Tech Review", "url": "https://www.technologyreview.com/feed/", "categories": ["industry"] },
 
     { "name": "Hacker News", "url": "https://hnrss.org/newest?points=50", "categories": ["discussion"] },
-    { "name": "r/artificial", "url": "https://www.reddit.com/r/artificial/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
-    { "name": "r/MachineLearning", "url": "https://www.reddit.com/r/MachineLearning/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
-    { "name": "r/singularity", "url": "https://www.reddit.com/r/singularity/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
-    { "name": "r/LocalLLaMA", "url": "https://www.reddit.com/r/LocalLLaMA/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
-    { "name": "r/developersIndia", "url": "https://www.reddit.com/r/developersIndia/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" }
+    { "name": "Reddit", "url": "https://www.reddit.com/r/artificial+MachineLearning+LocalLLaMA+singularity+developersIndia/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" }
   ],
   "agent_reach": {
     "enabled": true,
     "read_top_n": 8,
     "timeout_seconds": 60,
-    "read_backend": "public-web",
     "searches": [
       {
         "channel": "web",

@@ -534,7 +534,13 @@ def enrich(items: list[dict], cfg: dict) -> None:
 
     timeout = int(reach.get("timeout_seconds") or 80)
     read_backend = str(reach.get("read_backend") or "").strip()
-    targets = [item for item in items if len(item.get("summary") or "") < 160][:limit]
+    targets = [
+        item
+        for item in items
+        # Google News hands out opaque redirect links; reading them buys nothing.
+        if "news.google.com" not in item.get("url", "")
+        and len(item.get("summary") or "") < 160
+    ][:limit]
     if not targets:
         return
     log(f"agent-reach read: enriching {len(targets)} item(s)")
@@ -580,7 +586,10 @@ def prepare(raw_items: list[dict], cfg: dict, moment: dt.datetime) -> list[dict]
     window_hours = int(cfg.get("lookback_hours") or 24)
     max_items = int(cfg.get("max_items") or 60)
     cutoff = moment - dt.timedelta(hours=window_hours)
-    fresh_from = slot_start(moment, int(cfg.get("schedule_hours") or 2))
+    schedule_hours = int(cfg.get("schedule_hours") or 2)
+    # The previous scheduled slot, not the current one: a run that GitHub starts
+    # a few minutes late must still cover the two hours before it.
+    fresh_from = slot_start(moment, schedule_hours) - dt.timedelta(hours=schedule_hours)
 
     kept: list[dict] = []
     seen_urls: set[str] = set()
@@ -1035,7 +1044,7 @@ def render_page(
     if earlier_items:
         earlier_toggle = (
             '<button class="ghost" id="show-earlier" type="button" aria-expanded="false">'
-            '<span id="earlier-label">Earlier today</span>'
+            '<span id="earlier-label">Earlier</span>'
             f'<span class="count">{len(earlier_items)}</span></button>'
         )
 
