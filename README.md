@@ -13,11 +13,18 @@ to your phone.
    the thinnest items (`agent-reach read <url>`), so cards carry real text and
    not just an RSS snippet.
 3. **Prepare** - de-duplicate by normalised URL and by title, drop anything
-   older than `lookback_hours`, score by recency + keyword boosts, mark what
-   arrived since the last two-hour window as `new`.
-4. **Publish** - `public/index.html` (searchable, tag filters, "new only"),
-   `public/data.json` (machine readable) and `public/digest.md`.
+   older than `lookback_hours`, score by recency + keyword boosts, cap each
+   topic so no single source floods the page, and mark what arrived since the
+   last two-hour window as `new`.
+4. **Publish** - `public/index.html` grouped by topic, newest first, showing
+   **only new items** with everything from the rest of the day behind an
+   "Earlier" toggle; plus `public/data.json` and `public/digest.md`.
 5. **Notify** - optional ntfy push and/or Telegram message with the top items.
+
+The page covers six topics in one sweep: **AI startups & money**, **AI
+research** (arXiv, papers, labs), **Frontier labs & AGI**, **India AI**
+(national news, policy, chips, data centres), **AI in the world**, and **what
+people are saying** (Reddit, Hacker News, Agent Reach web searches).
 
 Every step degrades: a dead feed, a blocked page or a missing `agent-reach`
 is logged and skipped, and the run still publishes what it has.
@@ -57,19 +64,49 @@ ranks and publishes, it just does not notify anyone.
 
 Everything lives in `config.json`:
 
-- `feeds` - `name`, `url`, and `categories` (which become the tag chips). Any
-  RSS or Atom feed works.
-- `agent_reach.searches` - `channel` + `action` + `query` + `limit`, plus
-  `categories`. Defaults are two `web` searches; drop them, add more, or use
-  another channel that needs no login (`github`, `youtube`, `v2ex`).
+- `topics` - ordered `{ "id": ..., "label": ... }` groups. A feed's first
+  `categories` entry is the topic it files under, so `["india"]` lands in the
+  India AI section and `["discussion"]` in what people are saying. Order here is
+  the order of the sections on the page.
+- `feeds` - `name`, `url`, `categories`, and optionally `user_agent` (Reddit
+  wants a descriptive one). Any RSS or Atom feed works, including Google News
+  query feeds such as
+  `https://news.google.com/rss/search?q=India%20AI%20policy&hl=en-IN&gl=IN&ceid=IN:en`
+  - that is how the India and superintelligence sections stay broad.
+- `agent_reach.searches` - `channel` + `action` + `query` + `limit` + `categories`,
+  and `enabled: false` to park one. Defaults are four `web` searches (debates,
+  startup funding, India, superintelligence) plus a disabled `twitter` search.
   `agent_reach.read_top_n` caps how many pages are opened per run,
   `timeout_seconds` caps each call, and `read_backend` (`public-web` by default)
   keeps page reads on the plain web path instead of a platform API, which
   rate-limits CI runners.
 - `ranking.boost_keywords` / `demote_keywords` - what floats up, what sinks.
+- `only_new` (`true`) - the page shows only items since the previous sweep; set
+  it to `false` to list the whole `lookback_hours` window.
+- `max_per_topic` - the most cards one topic may contribute per run.
 - `lookback_hours`, `max_items`, `schedule_hours` (keep it equal to the cron
-  interval so "new" lines up with the previous run), `timezone` for the clock
+  interval so "new" lines up with the previous run), `timezone` for the clocks
   shown on the page.
+
+### X / Twitter
+
+X needs a logged-in session, so a GitHub runner cannot search it: the `twitter`
+search in `config.json` ships disabled. Run
+`agent-reach login twitter` locally and set `"enabled": true` on that entry to
+use it outside CI. Reddit is covered without a login through its public RSS
+feeds, which is where most of the "what people are saying" cards come from.
+
+## The Prospects tab
+
+The page has two tabs: **Radar** (the two-hourly feed) and **Prospects** (a
+hand-researched outreach list). The list lives in `prospects.json` - one object
+per company with `company`, `tier`, `fit`, `city`, `phone`, `email`, `website`,
+`rating`, `reviews`, `rating_source`, `decision_maker`, `role`, `trigger` (what
+was actually seen on their site) and `gap` (what to pitch). `radar.py` renders
+it on every run, so the tab is never overwritten: edit the JSON, push, and the
+next run shows the change. A missing or broken file is logged and the tab
+renders empty. The same list is published as `public/prospects.csv` behind the
+tab's **Download CSV** link.
 
 ## Run it locally
 
@@ -95,5 +132,6 @@ are skipped with a log line.
 
 - `radar.py` - the whole pipeline, standard library only.
 - `config.json` - everything you can tune.
+- `prospects.json` - the hand-researched prospect list behind the **Prospects** tab.
 - `templates/index.html` - the page shell; `radar.py` fills in the cards.
 - `.github/workflows/radar.yml` - the two-hourly run and the Pages deploy.

@@ -16,6 +16,7 @@ call is `agent-reach`, and it is skipped cleanly when it is not installed.
 from __future__ import annotations
 
 import concurrent.futures
+import csv
 import datetime as dt
 import html as html_lib
 import json
@@ -34,6 +35,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "config.json"
 TEMPLATE_PATH = ROOT / "templates" / "index.html"
+PROSPECTS_PATH = ROOT / "prospects.json"
 PUBLIC_DIR = ROOT / "public"
 
 USER_AGENT = "DevRadar/1.0 (two-hourly digest bot; +https://github.com)"
@@ -164,9 +166,9 @@ def unique(values) -> list[str]:
     return out
 
 
-def http_get(url: str, timeout: int = HTTP_TIMEOUT) -> bytes:
+def http_get(url: str, timeout: int = HTTP_TIMEOUT, user_agent: str | None = None) -> bytes:
     request = urllib.request.Request(
-        url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"}
+        url, headers={"User-Agent": user_agent or USER_AGENT, "Accept": "*/*"}
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
@@ -212,6 +214,29 @@ def local_clock(moment: dt.datetime, tz_name: str) -> str:
         return ""
     local = moment.astimezone(zone)
     return f"{local.strftime('%d %b %H:%M')} {local.tzname() or ''}".strip()
+
+
+def local_time_label(moment: dt.datetime, tz_name: str, fmt: str = "%H:%M") -> str:
+    try:
+        zone = ZoneInfo(tz_name)
+    except Exception:  # unknown zone name in config
+        return moment.strftime(fmt) + " UTC"
+    return moment.astimezone(zone).strftime(fmt)
+
+
+def next_run_at(moment: dt.datetime, hours: int) -> dt.datetime:
+    step_hours = max(1, int(hours))
+    return slot_start(moment, step_hours) + dt.timedelta(hours=step_hours)
+
+
+def human_until(target: dt.datetime, moment: dt.datetime) -> str:
+    minutes = int(max(0.0, (target - moment).total_seconds()) // 60)
+    if minutes < 1:
+        return "any moment now"
+    if minutes < 60:
+        return f"in {minutes} min"
+    hours, mins = divmod(minutes, 60)
+    return f"in {hours}h {mins}m" if mins else f"in {hours}h"
 
 
 # --------------------------------------------------------------------------- #
@@ -312,7 +337,11 @@ def collect_feeds(cfg: dict) -> list[dict]:
     def fetch(feed: dict) -> list[dict]:
         name = feed.get("name") or urllib.parse.urlsplit(feed["url"]).netloc
         try:
-            raw = http_get(feed["url"], timeout=timeout)
+            raw = http_get(
+                feed["url"],
+                timeout=timeout,
+                user_agent=feed.get("user_agent") or None,
+            )
             items = parse_feed(raw, name, feed.get("categories") or [])
         except Exception as exc:  # one broken feed must never sink the run
             log(f"feed failed ({name}): {exc}")
@@ -474,6 +503,8 @@ def collect_reach(cfg: dict) -> list[dict]:
     timeout = int(reach.get("timeout_seconds") or 80)
     collected: list[dict] = []
     for search in searches:
+        if search.get("enabled") is False:
+            continue
         channel = str(search.get("channel") or "web")
         action = str(search.get("action") or "search")
         query = str(search.get("query") or "").strip()
@@ -587,7 +618,21 @@ def prepare(raw_items: list[dict], cfg: dict, moment: dt.datetime) -> list[dict]
     kept.sort(key=lambda entry: (entry.get("score", 0.0), entry.get("published") or ""), reverse=True)
     if stale or duplicate:
         log(f"prepare: dropped {stale} stale and {duplicate} duplicate item(s)")
-    return kept[:max_items]
+
+    # No single topic may take over the page: keep at most max_per_topic per group.
+    per_topic_limit = int(cfg.get("max_per_topic") or 0)
+    if per_topic_limit <= 0:
+        return kept[:max_items]
+
+    capped: list[dict] = []
+    per_topic: dict[str, int] = {}
+    for item in kept:
+        topic = (item.get("tags") or ["other"])[0]
+        if per_topic.get(topic, 0) >= per_topic_limit:
+            continue
+        per_topic[topic] = per_topic.get(topic, 0) + 1
+        capped.append(item)
+    return capped[:max_items]
 
 
 # --------------------------------------------------------------------------- #
@@ -654,6 +699,38 @@ def llm_brief(items: list[dict], cfg: dict) -> str:
 # --------------------------------------------------------------------------- #
 # rendering
 # --------------------------------------------------------------------------- #
+def item_topic(item: dict) -> str:
+    """The first tag is the topic a card is grouped and filtered under."""
+    tags = item.get("tags") or []
+    return str(tags[0]) if tags else "other"
+
+
+def topic_map(cfg: dict) -> dict[str, str]:
+    labels: dict[str, str] = {}
+    for topic in cfg.get("topics") or []:
+        if not isinstance(topic, dict):
+            continue
+        topic_id = str(topic.get("id") or "").strip()
+        if topic_id:
+            labels[topic_id] = str(topic.get("label") or topic_id)
+    return labels
+
+
+def topic_label(topic: str, labels: dict[str, str]) -> str:
+    return labels.get(topic) or topic.replace("-", " ").replace("_", " ").title()
+
+
+def ordered_topics(topics, labels: dict[str, str], cfg: dict) -> list[str]:
+    configured = [
+        str(topic.get("id"))
+        for topic in cfg.get("topics") or []
+        if isinstance(topic, dict) and topic.get("id")
+    ]
+    known = [topic for topic in configured if topic in topics]
+    rest = sorted(topic for topic in topics if topic not in configured)
+    return known + rest
+
+
 def brief_markup(brief: str, items: list[dict]) -> str:
     if brief:
         bullets = [
@@ -662,39 +739,35 @@ def brief_markup(brief: str, items: list[dict]) -> str:
             if line.strip()
         ]
         bullets = [bullet for bullet in bullets if bullet]
+        label = "This window, in short"
     else:
         bullets = [
             f"{item.get('title', '')} — {item.get('source', '')}" for item in items[:4]
         ]
+        label = "Top of this window"
     if not bullets:
         return ""
     entries = "".join(f"<li>{html_lib.escape(bullet)}</li>" for bullet in bullets)
-    label = "Today, in short" if brief else "Latest headlines"
-    return f'<h2 class="brief-title">{label}</h2><ul class="brief-list">{entries}</ul>'
+    return f'<p class="eyebrow">{label}</p><ul class="brief-list">{entries}</ul>'
 
 
-def chips_markup(items: list[dict]) -> str:
+def chips_markup(items: list[dict], cfg: dict) -> str:
     counts: dict[str, int] = {}
     for item in items:
-        for tag in item.get("tags") or []:
-            counts[tag] = counts.get(tag, 0) + 1
-    ordered = sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))[:10]
+        topic = item_topic(item)
+        counts[topic] = counts.get(topic, 0) + 1
+    labels = topic_map(cfg)
     parts = ['<button class="chip is-active" data-tag="">All</button>']
-    parts.append('<button class="chip" id="new-only" type="button">New only</button>')
-    for tag, _count in ordered:
+    for topic in ordered_topics(set(counts), labels, cfg):
         parts.append(
-            f'<button class="chip" data-tag="{html_lib.escape(tag)}">#{html_lib.escape(tag)}</button>'
+            f'<button class="chip" data-tag="{html_lib.escape(topic)}">'
+            f"{html_lib.escape(topic_label(topic, labels))}"
+            f'<span class="chip-count">{counts[topic]}</span></button>'
         )
     return "".join(parts)
 
 
 def cards_markup(items: list[dict]) -> str:
-    if not items:
-        return (
-            '<p class="empty">Nothing collected yet. The next run fills this in - '
-            'or run the workflow by hand from the Actions tab.</p>'
-        )
-
     cards: list[str] = []
     for item in items:
         title = html_lib.escape(item.get("title", ""))
@@ -704,10 +777,8 @@ def cards_markup(items: list[dict]) -> str:
         age = html_lib.escape(item.get("age") or "")
         published = html_lib.escape(item.get("published") or "")
         tags = item.get("tags") or []
+        topic = item_topic(item)
         tag_list = ",".join(html_lib.escape(tag) for tag in tags)
-        tag_html = "".join(
-            f'<span class="tag">#{html_lib.escape(tag)}</span>' for tag in tags[:4]
-        )
         searchable = html_lib.escape(
             " ".join(
                 [item.get("title", ""), source, item.get("summary") or "", " ".join(tags)]
@@ -720,41 +791,248 @@ def cards_markup(items: list[dict]) -> str:
         extra = ""
         if detail and len(detail) > len(item.get("summary") or "") + 80:
             extra = (
-                '<details class="more"><summary>Full text</summary>'
+                '<details class="more"><summary>Read the full text</summary>'
                 f"<p>{html_lib.escape(detail)}</p></details>"
             )
         summary_html = f'<p class="sum">{summary}</p>' if summary else ""
         new_class = " is-new" if item.get("is_new") else ""
 
         cards.append(
-            f'<article class="card{new_class}" '
+            f'<article class="card{new_class}" data-topic="{html_lib.escape(topic)}" '
             f'data-tags="{tag_list}" data-new="{is_new}" data-q="{searchable}">'
-            '<div class="row">'
+            '<div class="card-head">'
             f'<span class="src">{source}</span>'
-            f'<span class="age"><time datetime="{published}">{age}</time></span>'
+            '<span class="sep">·</span>'
+            f'<time class="age" datetime="{published}">{age}</time>'
             f"{badge}"
             "</div>"
             f'<h3><a href="{url}" target="_blank" rel="noopener">{title}</a></h3>'
             f"{summary_html}"
             f"{extra}"
-            f'<div class="tags">{tag_html}</div>'
             "</article>"
         )
     return "\n".join(cards)
 
 
+def grouped_cards(items: list[dict], cfg: dict, empty_message: str = "") -> str:
+    if not items:
+        if not empty_message:
+            return ""
+        return f'<p class="empty">{html_lib.escape(empty_message)}</p>'
+
+    labels = topic_map(cfg)
+    buckets: dict[str, list[dict]] = {}
+    for item in items:
+        buckets.setdefault(item_topic(item), []).append(item)
+
+    parts: list[str] = []
+    for topic in ordered_topics(set(buckets), labels, cfg):
+        parts.append(
+            f'<section class="group" data-topic="{html_lib.escape(topic)}">'
+            '<h2 class="group-title">'
+            f"{html_lib.escape(topic_label(topic, labels))}"
+            f'<span class="group-count">{len(buckets[topic])}</span>'
+            "</h2>"
+            f'<div class="stack">{cards_markup(buckets[topic])}</div>'
+            "</section>"
+        )
+    return "\n".join(parts)
+
+
+def load_prospects() -> list[dict]:
+    """Read prospects.json; a missing or broken file leaves the tab empty."""
+    if not PROSPECTS_PATH.exists():
+        log("prospects: prospects.json not found, tab left empty")
+        return []
+
+    try:
+        payload = json.loads(PROSPECTS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        log(f"prospects: could not read prospects.json: {exc}")
+        return []
+
+    if isinstance(payload, dict):
+        payload = payload.get("prospects") or []
+    if not isinstance(payload, list):
+        log("prospects: prospects.json is not a list, tab left empty")
+        return []
+
+    entries = [entry for entry in payload if isinstance(entry, dict)]
+    log(f"prospects: {len(entries)} loaded")
+    return entries
+
+
+def prospects_chips(prospects: list[dict]) -> str:
+    """Fit filter chips, best fit first."""
+
+    def sort_key(value: str) -> tuple[float, str]:
+        try:
+            return (-float(value), value)
+        except ValueError:
+            return (0.0, value)
+
+    fits = sorted(
+        {
+            str(entry.get("fit") or "").strip()
+            for entry in prospects
+            if str(entry.get("fit") or "").strip()
+        },
+        key=sort_key,
+    )
+    parts = ['<button class="chip is-active" data-pfit="">All</button>']
+    for fit in fits:
+        parts.append(
+            f'<button class="chip" data-pfit="{html_lib.escape(fit)}">'
+            f"fit {html_lib.escape(fit)}</button>"
+        )
+    return "".join(parts)
+
+
+def prospects_markup(prospects: list[dict]) -> str:
+    if not prospects:
+        return (
+            '<p class="empty">No prospects loaded - add a prospects.json next to '
+            "radar.py and the next run lists them here.</p>"
+        )
+
+    cards: list[str] = []
+    for entry in prospects:
+        name = str(entry.get("company") or entry.get("name") or "Unnamed").strip()
+        fit = str(entry.get("fit") or "").strip()
+        tier = str(entry.get("tier") or "").strip().lower()
+        city = str(entry.get("city") or "").strip()
+        phone = str(entry.get("phone") or "").strip()
+        email = str(entry.get("email") or "").strip()
+        website = str(entry.get("website") or "").strip()
+        trigger = str(entry.get("trigger") or "").strip()
+        gap = str(entry.get("gap") or "").strip()
+        who = str(entry.get("decision_maker") or "").strip()
+        role = str(entry.get("role") or "").strip()
+        rating = str(entry.get("rating") or "").strip()
+        reviews = str(entry.get("reviews") or "").strip()
+
+        if website and not website.startswith(("http://", "https://")):
+            website = f"https://{website}"
+
+        heading = html_lib.escape(name)
+        if website:
+            heading = (
+                f'<a href="{html_lib.escape(website)}" target="_blank" rel="noopener">'
+                f"{html_lib.escape(name)}</a>"
+            )
+
+        fit_class = "pfit" + (f" pfit-{tier}" if tier else "")
+        fit_label = html_lib.escape(fit) or "-"
+        row_bits = [f'<span class="{fit_class}">fit {fit_label}</span>']
+        if rating:
+            row_bits.append(f'<span class="src">{html_lib.escape(rating)}</span>')
+        if reviews:
+            row_bits.append(f'<span class="tag">{html_lib.escape(reviews)} reviews</span>')
+        if city:
+            row_bits.append(f'<span class="tag">{html_lib.escape(city)}</span>')
+
+        links: list[str] = []
+        if phone:
+            dial = re.sub(r"[^0-9+]", "", phone)
+            links.append(
+                f'<a href="tel:{html_lib.escape(dial)}">{html_lib.escape(phone)}</a>'
+            )
+        if email:
+            links.append(
+                f'<a href="mailto:{html_lib.escape(email)}">{html_lib.escape(email)}</a>'
+            )
+        else:
+            links.append("<span>no email published</span>")
+        if website:
+            links.append(
+                f'<a href="{html_lib.escape(website)}" target="_blank" '
+                f'rel="noopener">website</a>'
+            )
+
+        who_line = " · ".join(part for part in (who, role) if part)
+        trigger_html = (
+            f'<p class="sum">{html_lib.escape(trigger)}</p>' if trigger else ""
+        )
+        gap_html = f'<p class="pmeta">Pitch: {html_lib.escape(gap)}</p>' if gap else ""
+        who_html = (
+            f'<p class="pmeta">{html_lib.escape(who_line)}</p>' if who_line else ""
+        )
+        searchable = html_lib.escape(
+            " ".join(
+                [name, city, trigger, gap, who, role, email, phone, website]
+            ).lower()
+        )
+
+        cards.append(
+            f'<article class="card pcard" data-fit="{html_lib.escape(fit)}" '
+            f'data-q="{searchable}">'
+            f'<div class="row">{"".join(row_bits)}</div>'
+            f"<h3>{heading}</h3>"
+            f"{trigger_html}"
+            f"{gap_html}"
+            f"{who_html}"
+            f'<div class="plinks">{"".join(links)}</div>'
+            "</article>"
+        )
+
+    return "\n".join(cards)
+
+
+PROSPECT_COLUMNS = [
+    "company",
+    "tier",
+    "fit",
+    "city",
+    "phone",
+    "email",
+    "website",
+    "rating",
+    "reviews",
+    "rating_source",
+    "decision_maker",
+    "role",
+    "trigger",
+    "gap",
+]
+
+
+def write_prospects_csv(prospects: list[dict], path: Path) -> None:
+    """Publish the same list as a spreadsheet next to the page."""
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=PROSPECT_COLUMNS, extrasaction="ignore")
+        writer.writeheader()
+        for entry in prospects:
+            writer.writerow({column: entry.get(column) or "" for column in PROSPECT_COLUMNS})
+
+
 def render_page(
     items: list[dict],
+    new_items: list[dict],
+    earlier_items: list[dict],
     cfg: dict,
     moment: dt.datetime,
     window_hours: int,
     brief: str,
+    prospects: list[dict],
 ) -> str:
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    new_count = sum(1 for item in items if item.get("is_new"))
     title = cfg.get("title") or "Dev Radar"
     tagline = cfg.get("tagline") or ""
     clock = local_clock(moment, cfg.get("timezone") or "UTC")
+    tz_name = cfg.get("timezone") or "UTC"
+    schedule_hours = int(cfg.get("schedule_hours") or 2)
+    upcoming = next_run_at(moment, schedule_hours)
+    upcoming_label = (
+        f"{local_time_label(upcoming, tz_name)} · {human_until(upcoming, moment)}"
+    )
+
+    earlier_toggle = ""
+    if earlier_items:
+        earlier_toggle = (
+            '<button class="ghost" id="show-earlier" type="button" aria-expanded="false">'
+            '<span id="earlier-label">Earlier today</span>'
+            f'<span class="count">{len(earlier_items)}</span></button>'
+        )
 
     replacements = {
         "{{TITLE}}": html_lib.escape(title),
@@ -763,11 +1041,22 @@ def render_page(
         "{{UPDATED_LOCAL}}": html_lib.escape(clock),
         "{{UPDATED_ISO}}": html_lib.escape(iso(moment)),
         "{{COUNT}}": str(len(items)),
-        "{{NEW_COUNT}}": str(new_count),
+        "{{NEW_COUNT}}": str(len(new_items)),
+        "{{EARLIER_COUNT}}": str(len(earlier_items)),
+        "{{NEXT_RUN}}": html_lib.escape(upcoming_label),
         "{{WINDOW}}": f"{window_hours}h",
-        "{{BRIEF}}": brief_markup(brief, items),
-        "{{CHIPS}}": chips_markup(items),
-        "%%CARDS%%": cards_markup(items),
+        "{{BRIEF}}": brief_markup(brief, new_items),
+        "{{CHIPS}}": chips_markup(items, cfg),
+        "{{EARLIER_TOGGLE}}": earlier_toggle,
+        "%%NEW_CARDS%%": grouped_cards(
+            new_items,
+            cfg,
+            "A quiet window - nothing new since the last run. The next sweep is on its way.",
+        ),
+        "%%EARLIER_CARDS%%": grouped_cards(earlier_items, cfg),
+        "{{PROSPECT_COUNT}}": str(len(prospects)),
+        "{{PROSPECT_CHIPS}}": prospects_chips(prospects),
+        "%%PROSPECTS%%": prospects_markup(prospects),
     }
 
     page = template
@@ -907,6 +1196,7 @@ def notify(
 # --------------------------------------------------------------------------- #
 def main() -> int:
     cfg = load_config()
+    prospects = load_prospects()
     moment = now_utc()
     window_hours = int(cfg.get("lookback_hours") or 24)
 
@@ -915,16 +1205,26 @@ def main() -> int:
     log(f"collected {len(raw)} raw item(s)")
 
     items = prepare(raw, cfg, moment)
-    log(f"prepared {len(items)} item(s) ({sum(1 for i in items if i.get('is_new'))} new)")
+    if cfg.get("only_new", True):
+        new_items = [item for item in items if item.get("is_new")]
+        earlier_items = [item for item in items if not item.get("is_new")]
+    else:
+        new_items, earlier_items = items, []
+    log(f"prepared {len(items)} item(s): {len(new_items)} new, {len(earlier_items)} earlier")
 
-    enrich(items, cfg)
-    brief = llm_brief(items, cfg)
+    # Enrich the fresh cards first, then the ones behind the "Earlier" toggle.
+    enrich(new_items + earlier_items, cfg)
+    brief = llm_brief(new_items, cfg)
     page = public_url()
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
     (PUBLIC_DIR / "index.html").write_text(
-        render_page(items, cfg, moment, window_hours, brief), encoding="utf-8"
+        render_page(
+            items, new_items, earlier_items, cfg, moment, window_hours, brief, prospects
+        ),
+        encoding="utf-8",
     )
+    write_prospects_csv(prospects, PUBLIC_DIR / "prospects.csv")
     (PUBLIC_DIR / "data.json").write_text(
         json.dumps(
             {
@@ -932,7 +1232,8 @@ def main() -> int:
                 "generated": iso(moment),
                 "window_hours": window_hours,
                 "count": len(items),
-                "new_count": sum(1 for item in items if item.get("is_new")),
+                "new_count": len(new_items),
+                "earlier_count": len(earlier_items),
                 "brief": brief,
                 "items": items,
             },

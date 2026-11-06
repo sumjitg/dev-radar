@@ -3,19 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
 <meta name="description" content="{{TAGLINE}}">
 <title>{{TITLE}}</title>
 <style>
   :root {
-    --bg: #0a0d13;
-    --panel: #11161f;
-    --panel-2: #161d29;
-    --line: #1e2634;
-    --text: #e7ebf3;
-    --muted: #8b95a9;
-    --accent: #5eead4;
-    --new: #f472b6;
+    --bg: #0b0d12;
+    --surface: #11141b;
+    --surface-2: #171c25;
+    --line: #232a37;
+    --text: #e8ecf5;
+    --muted: #99a3b5;
+    --faint: #6b7688;
+    --accent: #5ee6bd;
+    --accent-soft: rgba(94, 230, 189, 0.11);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --surface: #ffffff;
+      --surface-2: #f1f3f7;
+      --line: #e3e7ee;
+      --text: #11151b;
+      --muted: #55606f;
+      --faint: #8a94a3;
+      --accent: #0d9488;
+      --accent-soft: rgba(13, 148, 136, 0.10);
+    }
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -23,224 +37,375 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font: 15.5px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 22px 16px 56px;
-  }
-  .top h1 {
-    margin: 0;
-    font-size: 1.6rem;
-    letter-spacing: -0.02em;
-  }
-  .tagline {
-    margin: 4px 0 12px;
-    color: var(--muted);
-    font-size: 0.92rem;
-  }
-  .status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    align-items: center;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--panel);
-    font-size: 0.82rem;
-    color: var(--muted);
-  }
-  .dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    margin-right: 6px;
-    border-radius: 50%;
+  @media (prefers-color-scheme: light) { body { background: var(--bg); } }
+  .shell { max-width: 720px; margin: 0 auto; padding: 26px 18px 64px; }
+
+  .masthead { margin-bottom: 4px; }
+  .brandline { display: flex; align-items: center; gap: 9px; }
+  h1 { margin: 0; font-size: 1.45rem; font-weight: 650; letter-spacing: -0.025em; }
+  .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
     background: var(--accent);
-    box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.15);
+    box-shadow: 0 0 0 4px var(--accent-soft);
   }
-  .status b { color: var(--text); font-weight: 600; }
-  .brief {
-    margin: 14px 0 4px;
-    padding: 14px 16px;
+  .live {
+    margin-left: 2px;
+    padding: 1px 7px;
+    border: 1px solid var(--accent-soft);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .tagline { margin: 6px 0 18px; color: var(--muted); font-size: 0.92rem; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    background: var(--line);
+    overflow: hidden;
   }
-  .brief-title {
-    margin: 0 0 8px;
-    font-size: 0.74rem;
-    letter-spacing: 0.09em;
+  .stat { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; background: var(--surface); }
+  .stat-label { font-size: 0.62rem; letter-spacing: 0.11em; text-transform: uppercase; color: var(--faint); }
+  .stat-value { font-size: 1.3rem; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat-value.small { font-size: 0.8rem; font-weight: 600; letter-spacing: 0; line-height: 1.35; }
+  .stamp { margin: 10px 0 0; font-size: 0.73rem; color: var(--faint); }
+  .dim { color: var(--faint); }
+
+  .tabs {
+    display: flex; gap: 4px;
+    margin: 20px 0 16px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .tab {
+    flex: 1 1 0;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .tab.is-active { background: var(--surface-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+  .tab-count { margin-left: 4px; font-size: 0.7rem; color: var(--accent); }
+
+  .brief {
+    margin: 0 0 18px;
+    padding: 12px 15px;
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: var(--surface);
+  }
+  .eyebrow {
+    margin: 0 0 7px;
+    font-size: 0.64rem;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
     color: var(--accent);
   }
-  .brief-list {
-    margin: 0;
-    padding-left: 18px;
-    font-size: 0.94rem;
-  }
-  .brief-list li { margin: 5px 0; }
-  .filters { margin: 18px 0 8px; }
-  #q {
+  .brief-list { margin: 0; padding-left: 17px; font-size: 0.895rem; color: var(--muted); }
+  .brief-list li { margin: 4px 0; }
+  .brief-list li:first-child { color: var(--text); }
+
+  .toolbar { position: sticky; top: 0; z-index: 5; padding: 10px 0 8px; margin-bottom: 6px; background: var(--bg); }
+  #q, #pq {
     width: 100%;
     padding: 11px 13px;
     border: 1px solid var(--line);
     border-radius: 11px;
-    background: var(--panel);
+    background: var(--surface);
     color: var(--text);
-    font-size: 0.94rem;
+    font: inherit;
+    font-size: 0.9rem;
     outline: none;
   }
-  #q:focus { border-color: #2f3d54; }
-  .chips {
-    display: flex;
-    gap: 7px;
-    overflow-x: auto;
-    padding: 10px 0 2px;
-    scrollbar-width: none;
-  }
+  #q:focus, #pq:focus { border-color: var(--accent); }
+  #q::placeholder, #pq::placeholder { color: var(--faint); }
+
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 9px 0 2px; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
   .chip {
     flex: 0 0 auto;
-    padding: 6px 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: transparent;
     color: var(--muted);
-    font-size: 0.8rem;
+    font: inherit;
+    font-size: 0.77rem;
     cursor: pointer;
     white-space: nowrap;
   }
-  .chip.is-active {
-    border-color: #2c5f57;
-    background: rgba(94, 234, 212, 0.12);
-    color: var(--accent);
-  }
-  .count-line {
-    margin: 6px 0 0;
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-  .card {
-    margin: 12px 0;
-    padding: 14px 15px;
+  .chip.is-active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .chip-count { font-size: 0.67rem; opacity: 0.65; color: inherit; }
+
+  .toolbar-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; }
+  .count-line { font-size: 0.73rem; color: var(--faint); }
+  .ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
     border: 1px solid var(--line);
-    border-left: 3px solid var(--line);
-    border-radius: 13px;
-    background: var(--panel);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
   }
-  .card.is-new { border-left-color: var(--new); }
-  .card[hidden] { display: none; }
-  .row {
+  .ghost:hover { border-color: var(--accent); color: var(--text); }
+  .ghost .count { color: var(--accent); font-size: 0.7rem; }
+
+  .group { margin: 0; }
+  .group-title {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    font-size: 0.76rem;
-    color: var(--muted);
+    margin: 22px 0 10px;
+    font-size: 0.71rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--faint);
   }
-  .src { color: #a7b4cc; font-weight: 600; }
+  .group-count {
+    padding: 1px 7px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 0.67rem;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+
+  .card {
+    padding: 13px 15px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    transition: border-color 0.15s ease;
+  }
+  .card:hover { border-color: var(--muted); }
+  .card.is-new { border-left: 2px solid var(--accent); }
+  .card[hidden] { display: none; }
+  .card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 0.72rem; color: var(--faint); }
+  .src { color: var(--muted); font-weight: 600; }
+  .sep { opacity: 0.5; }
   .badge {
+    margin-left: auto;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .card h3 { margin: 7px 0 6px; font-size: 1rem; font-weight: 600; line-height: 1.4; letter-spacing: -0.01em; }
+  .card h3 a { color: var(--text); text-decoration: none; }
+  .card h3 a:hover { color: var(--accent); }
+  .sum {
+    margin: 0;
+    font-size: 0.87rem;
+    line-height: 1.55;
+    color: var(--muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .more { margin-top: 8px; }
+  .more summary { list-style: none; cursor: pointer; font-size: 0.75rem; color: var(--accent); }
+  .more summary::-webkit-details-marker { display: none; }
+  .more p { margin: 8px 0 0; font-size: 0.84rem; color: var(--muted); }
+
+  .empty {
+    margin: 14px 0;
+    padding: 26px 16px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    color: var(--faint);
+    font-size: 0.86rem;
+    text-align: center;
+  }
+  .section-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 34px 0 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .section-title .dim { font-size: 0.74rem; font-weight: 400; }
+
+  footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.74rem; color: var(--faint); }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* prospects */
+  .pcard h3 { margin-top: 6px; }
+  .pfit {
     padding: 1px 7px;
     border-radius: 999px;
-    background: rgba(244, 114, 182, 0.16);
-    color: var(--new);
-    font-size: 0.68rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.66rem;
+    font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
-  .card h3 {
-    margin: 8px 0 6px;
-    font-size: 1.03rem;
-    line-height: 1.35;
-    letter-spacing: -0.01em;
-  }
-  .card h3 a { color: var(--text); text-decoration: none; }
-  .card h3 a:hover { color: var(--accent); }
-  .sum { margin: 0; font-size: 0.9rem; color: #bcc6d8; }
-  .more { margin-top: 8px; }
-  .more summary {
-    cursor: pointer;
-    font-size: 0.78rem;
-    color: var(--accent);
-    list-style: none;
-  }
-  .more summary::-webkit-details-marker { display: none; }
-  .more p { margin: 8px 0 0; font-size: 0.86rem; color: #a8b3c6; }
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .tag { font-size: 0.72rem; color: #6d7a92; }
-  .empty { color: var(--muted); font-size: 0.9rem; padding: 24px 4px; }
-  footer {
-    margin-top: 30px;
-    padding-top: 16px;
-    border-top: 1px solid var(--line);
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-  footer a { color: var(--accent); text-decoration: none; }
+  .pfit-b { background: rgba(139, 149, 169, 0.16); color: var(--muted); }
+  .pfit-c { background: rgba(139, 149, 169, 0.09); color: var(--faint); }
+  .pmeta { margin: 6px 0 0; font-size: 0.83rem; color: var(--muted); }
+  .plinks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 9px; font-size: 0.81rem; }
+  .plinks a { color: var(--accent); text-decoration: none; }
+  .plinks span { color: var(--faint); }
+  .note { margin: 14px 0 0; font-size: 0.76rem; color: var(--faint); }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <h1>{{TITLE}}</h1>
-    <p class="tagline">{{TAGLINE}}</p>
-    <div class="status">
-      <span><span class="dot"></span>live</span>
-      <span>updated <b>{{UPDATED}}</b></span>
-      <span>{{UPDATED_LOCAL}}</span>
-      <span><b>{{COUNT}}</b> items · <b>{{NEW_COUNT}}</b> new</span>
-      <span>window {{WINDOW}}</span>
+<div class="shell">
+  <header class="masthead">
+    <div class="brandline">
+      <span class="pulse" aria-hidden="true"></span>
+      <h1>{{TITLE}}</h1>
+      <span class="live">live</span>
     </div>
+    <p class="tagline">{{TAGLINE}}</p>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">new since last sweep</span>
+        <span class="stat-value">{{NEW_COUNT}}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">earlier</span>
+        <span class="stat-value">{{EARLIER_COUNT}}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">next sweep</span>
+        <span class="stat-value small">{{NEXT_RUN}}</span>
+      </div>
+    </div>
+    <p class="stamp">Updated {{UPDATED}} <span class="dim">· {{UPDATED_LOCAL}}</span></p>
   </header>
 
-  <section class="brief">
-    {{BRIEF}}
-  </section>
+  <nav class="tabs" id="tabs">
+    <button class="tab is-active" type="button" data-view="radar">Radar <span class="tab-count">{{NEW_COUNT}}</span></button>
+    <button class="tab" type="button" data-view="prospects">Prospects <span class="tab-count">{{PROSPECT_COUNT}}</span></button>
+  </nav>
 
-  <section class="filters">
-    <input id="q" type="search" placeholder="Search titles, sources, tags" autocomplete="off" spellcheck="false">
-    <div class="chips" id="chips">{{CHIPS}}</div>
-    <p class="count-line"><span id="shown">{{COUNT}}</span> shown</p>
-  </section>
+  <div id="view-radar">
+    <section class="brief">
+      {{BRIEF}}
+    </section>
 
-  <main id="list">
-%%CARDS%%
-  </main>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search this window - title, source, topic" autocomplete="off" spellcheck="false">
+      <div class="chips" id="chips">{{CHIPS}}</div>
+      <div class="toolbar-foot">
+        <span class="count-line"><span id="shown">{{NEW_COUNT}}</span> shown</span>
+        {{EARLIER_TOGGLE}}
+      </div>
+    </div>
+
+    <main id="list">
+%%NEW_CARDS%%
+    </main>
+
+    <section id="earlier" hidden>
+      <h2 class="section-title">Earlier <span class="dim">last {{WINDOW}}</span></h2>
+%%EARLIER_CARDS%%
+    </section>
+  </div>
+
+  <section id="view-prospects" hidden>
+    <p class="tagline">Hand-researched Charlotte HVAC contractors, with the workflow gap seen on their own site.</p>
+    <div class="toolbar">
+      <input id="pq" type="search" placeholder="Search company, city, trigger, email" autocomplete="off" spellcheck="false">
+      <div class="chips" id="pchips">{{PROSPECT_CHIPS}}</div>
+      <div class="toolbar-foot">
+        <span class="count-line"><span id="pshown">{{PROSPECT_COUNT}}</span> shown · <a href="prospects.csv">Download CSV</a></span>
+      </div>
+    </div>
+    <div id="plist">
+%%PROSPECTS%%
+    </div>
+    <p class="note">Fit = visible gaps + ability to pay + reachability. Confirm the email address and the decision-maker before sending anything. Nothing here has been contacted.</p>
+  </section>
 
   <footer>
-    <p>Collected by <a href="https://github.com/Panniantong/Agent-Reach">agent-reach</a> and RSS every two hours. The page reloads itself when you leave it open.</p>
+    <p>Swept every two hours from RSS and Reddit, with <a href="https://github.com/Panniantong/Agent-Reach">agent-reach</a> for searches and full-page reads. Only new items are shown; everything else is behind "Earlier today".</p>
     <p>Last update {{UPDATED_ISO}}.</p>
   </footer>
 </div>
 <script>
-  var cards = Array.prototype.slice.call(document.querySelectorAll('article.card'));
+  var radarCards = Array.prototype.slice.call(document.querySelectorAll('#list article.card, #earlier article.card'));
   var input = document.getElementById('q');
   var shown = document.getElementById('shown');
   var chips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-tag]'));
-  var newOnlyButton = document.getElementById('new-only');
   var activeTag = '';
-  var onlyNew = false;
 
   function apply() {
-    var needle = input.value.trim().toLowerCase();
-    var count = 0;
-    for (var i = 0; i < cards.length; i++) {
-      var card = cards[i];
+    var needle = input ? input.value.trim().toLowerCase() : '';
+    radarCards.forEach(function (card) {
       var tags = (card.getAttribute('data-tags') || '').split(',');
-      var tagOk = !activeTag || tags.indexOf(activeTag) !== -1;
+      var topic = card.getAttribute('data-topic') || '';
+      var tagOk = !activeTag || topic === activeTag || tags.indexOf(activeTag) !== -1;
       var textOk = !needle || (card.getAttribute('data-q') || '').indexOf(needle) !== -1;
-      var newOk = !onlyNew || card.getAttribute('data-new') === '1';
-      var visible = tagOk && textOk && newOk;
-      card.hidden = !visible;
-      if (visible) { count++; }
+      card.hidden = !(tagOk && textOk);
+    });
+
+    document.querySelectorAll('section.group').forEach(function (group) {
+      var visible = 0;
+      group.querySelectorAll('article.card').forEach(function (card) {
+        if (!card.hidden) { visible++; }
+      });
+      group.hidden = visible === 0;
+      var counter = group.querySelector('.group-count');
+      if (counter) { counter.textContent = visible; }
+    });
+
+    var earlier = document.getElementById('earlier');
+    if (earlier && earlier.hidden && (needle || activeTag)) {
+      var matchInEarlier = radarCards.some(function (card) {
+        return !card.hidden && earlier.contains(card);
+      });
+      if (matchInEarlier) {
+        earlier.hidden = false;
+        if (earlierToggle) { earlierToggle.setAttribute('aria-expanded', 'true'); }
+        if (earlierLabel) { earlierLabel.textContent = 'Hide earlier'; }
+      }
     }
-    shown.textContent = count;
+
+    var count = 0;
+    radarCards.forEach(function (card) {
+      if (card.hidden) { return; }
+      var inEarlier = earlier && earlier.contains(card);
+      if (!inEarlier || (earlier && !earlier.hidden)) { count++; }
+    });
+    if (shown) { shown.textContent = count; }
   }
 
-  input.addEventListener('input', apply);
+  if (input) { input.addEventListener('input', apply); }
 
   chips.forEach(function (chip) {
     chip.addEventListener('click', function () {
@@ -251,17 +416,78 @@
     });
   });
 
-  if (newOnlyButton) {
-    newOnlyButton.addEventListener('click', function () {
-      onlyNew = !onlyNew;
-      newOnlyButton.classList.toggle('is-active', onlyNew);
+  var earlierSection = document.getElementById('earlier');
+  var earlierToggle = document.getElementById('show-earlier');
+  var earlierLabel = document.getElementById('earlier-label');
+  if (earlierToggle && earlierSection) {
+    earlierToggle.addEventListener('click', function () {
+      var open = earlierSection.hidden;
+      earlierSection.hidden = !open;
+      earlierToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (earlierLabel) { earlierLabel.textContent = open ? 'Hide earlier' : 'Earlier today'; }
       apply();
     });
   }
 
+  /* tabs */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var viewRadar = document.getElementById('view-radar');
+  var viewProspects = document.getElementById('view-prospects');
+
+  function showView(name) {
+    var onProspects = name === 'prospects';
+    if (viewRadar) { viewRadar.hidden = onProspects; }
+    if (viewProspects) { viewProspects.hidden = !onProspects; }
+    tabs.forEach(function (tab) {
+      tab.classList.toggle('is-active', tab.getAttribute('data-view') === name);
+    });
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var name = tab.getAttribute('data-view');
+      showView(name);
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', name === 'prospects' ? '#prospects' : '#');
+      }
+    });
+  });
+
+  if (window.location.hash === '#prospects') { showView('prospects'); }
+
+  /* prospects filtering */
+  var pcards = Array.prototype.slice.call(document.querySelectorAll('article.pcard'));
+  var pq = document.getElementById('pq');
+  var pshown = document.getElementById('pshown');
+  var pchips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-pfit]'));
+  var activeFit = '';
+
+  function applyProspects() {
+    var needle = pq ? pq.value.trim().toLowerCase() : '';
+    var count = 0;
+    pcards.forEach(function (card) {
+      var fitOk = !activeFit || card.getAttribute('data-fit') === activeFit;
+      var textOk = !needle || (card.getAttribute('data-q') || '').indexOf(needle) !== -1;
+      card.hidden = !(fitOk && textOk);
+      if (!card.hidden) { count++; }
+    });
+    if (pshown) { pshown.textContent = count; }
+  }
+
+  if (pq) { pq.addEventListener('input', applyProspects); }
+
+  pchips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      pchips.forEach(function (other) { other.classList.remove('is-active'); });
+      chip.classList.add('is-active');
+      activeFit = chip.getAttribute('data-pfit') || '';
+      applyProspects();
+    });
+  });
+
   window.setInterval(function () {
     if (!document.hidden) { window.location.reload(); }
-  }, 15 * 60 * 1000);
+  }, 20 * 60 * 1000);
 </script>
 </body>
 </html>

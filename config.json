@@ -1,53 +1,87 @@
 {
   "title": "Dev Radar",
-  "tagline": "What just shipped, checked every two hours",
+  "tagline": "Everything moving in AI, swept every two hours",
   "timezone": "Asia/Kolkata",
   "schedule_hours": 2,
   "lookback_hours": 24,
-  "max_items": 60,
+  "max_items": 90,
+  "max_per_topic": 12,
+  "only_new": true,
   "http_timeout_seconds": 25,
+  "topics": [
+    { "id": "startups", "label": "AI startups & money" },
+    { "id": "research", "label": "AI research" },
+    { "id": "frontier", "label": "Frontier labs & AGI" },
+    { "id": "india", "label": "India AI" },
+    { "id": "industry", "label": "AI in the world" },
+    { "id": "discussion", "label": "What people are saying" }
+  ],
   "ranking": {
     "boost_keywords": {
-      "release": 1.5,
-      "released": 1.5,
+      "raises": 1.4,
+      "funding": 1.2,
+      "series a": 1.2,
+      "series b": 1.2,
+      "valuation": 1.0,
+      "acquires": 1.2,
+      "acquisition": 1.0,
       "launch": 1.2,
       "launched": 1.2,
-      "open source": 1.2,
-      "open-source": 1.2,
-      "general availability": 1.4,
+      "release": 1.2,
+      "released": 1.2,
+      "open source": 1.0,
+      "open-source": 1.0,
       "benchmark": 0.8,
-      "state of the art": 1.0,
-      "agent": 0.8,
-      "agents": 0.6,
-      "llm": 0.6,
+      "paper": 0.9,
+      "dataset": 0.7,
+      "superintelligence": 1.4,
+      "agi": 1.2,
+      "safety": 0.8,
+      "regulation": 0.9,
+      "policy": 0.9,
+      "india": 1.0,
       "model": 0.5,
-      "security": 0.7,
-      "vulnerability": 1.0,
-      "breaking change": 1.0,
-      "deprecated": 0.8,
-      "framework": 0.5
+      "agent": 0.6,
+      "agents": 0.6,
+      "llm": 0.5,
+      "security": 0.6
     },
     "demote_keywords": [
       "sponsored",
       "advertisement",
       "coupon",
-      "giveaway"
+      "giveaway",
+      "webinar registration"
     ]
   },
   "feeds": [
-    { "name": "OpenAI", "url": "https://openai.com/news/rss.xml", "categories": ["ai"] },
-    { "name": "Google AI", "url": "https://blog.google/technology/ai/rss/", "categories": ["ai"] },
-    { "name": "Hugging Face", "url": "https://huggingface.co/blog/feed.xml", "categories": ["ai", "open-source"] },
-    { "name": "Simon Willison", "url": "https://simonwillison.net/atom/everything/", "categories": ["ai", "dev"] },
-    { "name": "TechCrunch", "url": "https://techcrunch.com/feed/", "categories": ["tech", "startups"] },
-    { "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml", "categories": ["tech"] },
-    { "name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index", "categories": ["tech"] },
-    { "name": "MIT Tech Review", "url": "https://www.technologyreview.com/feed/", "categories": ["tech", "research"] },
-    { "name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/", "categories": ["ai", "business"] },
-    { "name": "arXiv cs.AI", "url": "http://export.arxiv.org/rss/cs.AI", "categories": ["research", "ai"] },
-    { "name": "Hacker News", "url": "https://hnrss.org/frontpage", "categories": ["dev", "community"] },
-    { "name": "GitHub Blog", "url": "https://github.blog/feed/", "categories": ["dev"] },
-    { "name": "Dev.to", "url": "https://dev.to/feed", "categories": ["dev", "community"] }
+    { "name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/", "categories": ["startups"] },
+    { "name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/", "categories": ["startups"] },
+    { "name": "Google News: AI startups", "url": "https://news.google.com/rss/search?q=AI%20startup%20(funding%20OR%20raises%20OR%20valuation)&hl=en-US&gl=US&ceid=US:en", "categories": ["startups"] },
+
+    { "name": "arXiv cs.AI", "url": "http://export.arxiv.org/rss/cs.AI", "categories": ["research"] },
+    { "name": "arXiv cs.LG", "url": "http://export.arxiv.org/rss/cs.LG", "categories": ["research"] },
+    { "name": "Hugging Face", "url": "https://huggingface.co/blog/feed.xml", "categories": ["research"] },
+    { "name": "Simon Willison", "url": "https://simonwillison.net/atom/everything/", "categories": ["research"] },
+
+    { "name": "OpenAI", "url": "https://openai.com/news/rss.xml", "categories": ["frontier"] },
+    { "name": "Google AI", "url": "https://blog.google/technology/ai/rss/", "categories": ["frontier"] },
+    { "name": "Google News: frontier labs", "url": "https://news.google.com/rss/search?q=(OpenAI%20OR%20Anthropic%20OR%20DeepMind)%20AI&hl=en-US&gl=US&ceid=US:en", "categories": ["frontier"] },
+    { "name": "Google News: superintelligence", "url": "https://news.google.com/rss/search?q=(superintelligence%20OR%20AGI%20OR%20%22artificial%20general%20intelligence%22)&hl=en-US&gl=US&ceid=US:en", "categories": ["frontier"] },
+
+    { "name": "Google News: India AI", "url": "https://news.google.com/rss/search?q=India%20(AI%20OR%20%22artificial%20intelligence%22)&hl=en-IN&gl=IN&ceid=IN:en", "categories": ["india"] },
+    { "name": "Google News: India AI policy", "url": "https://news.google.com/rss/search?q=India%20AI%20(policy%20OR%20regulation%20OR%20semiconductor%20OR%20%22data%20centre%22)%20when:3d&hl=en-IN&gl=IN&ceid=IN:en", "categories": ["india"] },
+
+    { "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml", "categories": ["industry"] },
+    { "name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index", "categories": ["industry"] },
+    { "name": "MIT Tech Review", "url": "https://www.technologyreview.com/feed/", "categories": ["industry"] },
+
+    { "name": "Hacker News", "url": "https://hnrss.org/newest?points=50", "categories": ["discussion"] },
+    { "name": "r/artificial", "url": "https://www.reddit.com/r/artificial/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
+    { "name": "r/MachineLearning", "url": "https://www.reddit.com/r/MachineLearning/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
+    { "name": "r/singularity", "url": "https://www.reddit.com/r/singularity/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
+    { "name": "r/LocalLLaMA", "url": "https://www.reddit.com/r/LocalLLaMA/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" },
+    { "name": "r/developersIndia", "url": "https://www.reddit.com/r/developersIndia/new/.rss", "categories": ["discussion"], "user_agent": "Mozilla/5.0 (compatible; DevRadar/1.0; +https://github.com/sumjitg/dev-radar)" }
   ],
   "agent_reach": {
     "enabled": true,
@@ -58,16 +92,38 @@
       {
         "channel": "web",
         "action": "search",
-        "query": "latest AI model release",
+        "query": "AI debate this week",
         "limit": 5,
-        "categories": ["ai"]
+        "categories": ["discussion"]
       },
       {
         "channel": "web",
         "action": "search",
-        "query": "developer tools release this week",
+        "query": "AI startup funding round",
         "limit": 5,
-        "categories": ["dev"]
+        "categories": ["startups"]
+      },
+      {
+        "channel": "web",
+        "action": "search",
+        "query": "India AI policy startups",
+        "limit": 5,
+        "categories": ["india"]
+      },
+      {
+        "channel": "web",
+        "action": "search",
+        "query": "superintelligence risk debate",
+        "limit": 5,
+        "categories": ["frontier"]
+      },
+      {
+        "channel": "twitter",
+        "action": "search",
+        "query": "AI breakthrough",
+        "limit": 5,
+        "categories": ["discussion"],
+        "enabled": false
       }
     ]
   },
